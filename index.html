@@ -1,0 +1,69 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>Edge Detection</title>
+<style>
+video, canvas {
+  display: block;
+  margin: 10px auto;
+}
+video {
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<h1>Edge Detection from Camera</h1>
+<video id="video" width="640" height="480" autoplay></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+<hr>
+<a href=https://github.com/code4fukui/opencv-test/>src on GitHub</a>
+
+<script type="module">
+import { cv } from "https://code4fukui.github.io/opencv-js/dist/opencv.esm.js";
+import { rnd } from "https://js.sabae.cc/rnd.js";
+
+const detectSquares = () => {
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const src = cv.imread(canvas);
+  const gray = new cv.Mat();
+  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+  const edges = new cv.Mat();
+  cv.Canny(gray, edges, 50, 100);
+
+  const contours = new cv.MatVector();
+  const hierarchy = new cv.Mat();
+  cv.findContours(edges, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+
+  for (let i = 0; i < contours.size(); i++) {
+    const contour = contours.get(i);
+    const approx = new cv.Mat();
+    cv.approxPolyDP(contour, approx, 0.02 * cv.arcLength(contour, true), true);
+    
+    if (true) { // approx.rows === 4) { // 四角の識別は失敗!?
+      //const color = new cv.Scalar(255, 0, 0, 255);
+      const color = new cv.Scalar(rnd(256), rnd(256), rnd(256), 255);
+      cv.drawContours(src, contours, i, color, 2, cv.LINE_8, hierarchy, 100);
+    }
+    approx.delete();
+  }
+
+  cv.imshow("canvas", src);
+  src.delete();
+  gray.delete();
+  edges.delete();
+  contours.delete();
+  hierarchy.delete();
+
+  requestAnimationFrame(detectSquares);
+};
+
+video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true });
+
+detectSquares();
+</script>
+
+</body>
+</html>
