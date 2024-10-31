@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>OpenCV.js adaptiveThreshold</title>
+<style>
+video, canvas {
+  display: block;
+  margin: 10px auto;
+}
+video {
+  display: none;
+}
+input[type="range"] {
+  width: calc(95vw - 5em);
+}
+</style>
+</head>
+<body>
+
+<h1>OpenCV.js adaptiveThreshold</h1>
+<video id="video" width="640" height="480" autoplay></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+<select id="seltype">
+  <option>ADAPTIVE_THRESH_GAUSSIAN_C</option>
+  <option>ADAPTIVE_THRESH_MEAN_C</option>
+</select><br>
+<input type="range" id="inpblocksize" min=3 max=101 step=2 value=17><span id="spanblocksize"></span><br>
+<input type="range" id="inpc" min=-20 max=20 step=1 value=9><span id="spanc"></span><br>
+<label><input type="checkbox" id="inpflip" checked>flip</label><br>
+<hr>
+<a href=https://github.com/code4fukui/opencv-test/>src on GitHub</a>
+
+<script type="module">
+import { cv } from "https://code4fukui.github.io/opencv-js/dist/opencv.esm.js";
+import { rnd } from "https://js.sabae.cc/rnd.js";
+
+const loop = () => {
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const src = cv.imread(canvas);
+  const gray = new cv.Mat();
+  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+  const bin = new cv.Mat();
+  //const type = cv.ADAPTIVE_THRESH_GAUSSIAN_C;
+  //const type = cv.ADAPTIVE_THRESH_MEAN_C;
+  const type = cv[seltype.value];
+  const thtype = cv.THRESH_BINARY; // ok
+  //const thtype = cv.THRESH_BINARY_INV; // ok
+  //const thtype = cv.THRESH_TRIANGLE; // ng
+  //const thtype = cv.THRESH_TOZERO; // ng
+  //const thtype = cv.THRESH_MASK; // ng
+  const blocksize = parseInt(inpblocksize.value);
+  spanblocksize.textContent = blocksize;
+  const c = parseInt(inpc.value);
+  spanc.textContent = c;
+  cv.adaptiveThreshold(gray, bin, 255, type, thtype, blocksize, c);
+
+  /*
+  // console.log(gray.size().width, gray.size().height);
+  const color = new cv.Scalar(255, 0, 0, 255);
+  cv.circle(src, new cv.Point(50, 50), 10, color);
+  */
+
+/*
+  const circles = new cv.Mat();
+  const dp = 1.0; // 0.8 - 1.2
+  const minDist = 10;
+  const param1 = 100;
+  const param2 = 50;
+  const minRadius = 10;
+  const maxRadius = 100;
+jx
+  cv.HoughCircles(gray, circles, cv.HOUGH_GRADIENT, dp, minDist, param1, param2, minRadius, maxRadius);
+  console.log(circles, circles.size.length);
+  for (let i = 0; i < circles.size.length; i++) {
+    const x = circles.data32F[i * 3];
+    const y = circles.data32F[i * 3 + 1];
+    const r = circles.data32F[i * 3 + 2];
+    const color = new cv.Scalar(255, 0, 0, 255);
+    //const color = new cv.Scalar(rnd(256), rnd(256), rnd(256), 255);
+    //cv.drawContours(src, contours, i, color, 2, cv.LINE_8, hierarchy, 100);
+    cv.circle(src, new cv.Point(x, y), r, color);
+  break;
+  }
+  circles.delete();
+  */
+  if (inpflip.checked) {
+    const flip = new cv.Mat();
+    cv.flip(bin, flip, 1);
+    cv.imshow("canvas", flip);
+    flip.delete();
+  } else {
+    cv.imshow("canvas", bin);
+  }
+
+  src.delete();
+  gray.delete();
+  bin.delete();
+
+  requestAnimationFrame(loop);
+};
+
+video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true });
+
+loop();
+</script>
+
+</body>
+</html>
