@@ -33,6 +33,8 @@ import { cv } from "https://code4fukui.github.io/opencv-js/dist/opencv.esm.js";
 import { rnd } from "https://js.sabae.cc/rnd.js";
 
 const loop = () => {
+  requestAnimationFrame(loop);
+  
   const ctx = canvas.getContext("2d");
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
@@ -96,8 +98,6 @@ jx
   src.delete();
   gray.delete();
   bin.delete();
-
-  requestAnimationFrame(loop);
 };
 
 video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true });
