@@ -2,6 +2,7 @@
 
 - [Edge Detection](https://code4fukui.github.io/opencv-test/)
 - [adaptiveThreshold](https://code4fukui.github.io/opencv-test/adaptiveThreshold.html)
+- [removeBackground by gradCut](https://code4fukui.github.io/opencv-test/removeBackground.html)
 
 ## reference
 

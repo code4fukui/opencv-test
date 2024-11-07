@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>OpenCV.js removeBackground by grabCut</title>
+<style>
+video, canvas {
+  display: block;
+  margin: 10px auto;
+}
+video {
+  display: none;
+}
+input[type="range"] {
+  width: calc(95vw - 5em);
+}
+</style>
+</head>
+<body>
+
+<h1>OpenCV.js removeBackground by grabCut</h1>
+<video id="video" width="640" height="480" autoplay></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+<input type="range" id="inp_iterCount" min=1 max=10 step=1 value=1><span id="span_iterCount"></span><br>
+<label><input type="checkbox" id="inp_flip" checked>flip</label><br>
+<hr>
+<a href=https://github.com/code4fukui/opencv-test/>src on GitHub</a>
+
+<script type="module">
+import { cv } from "https://code4fukui.github.io/opencv-js/dist/opencv.esm.js";
+import { removeBackground } from "./removeBackground.js";
+import { showImageByFlipSetting } from "./showImageByFlipSetting.js";
+
+const loop = () => {
+  requestAnimationFrame(loop);
+  
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const iterCount = parseInt(inp_iterCount.value);
+  span_iterCount.textContent = iterCount;
+
+  const src = cv.imread(canvas);
+  removeBackground(src, iterCount);
+  showImageByFlipSetting(src);  
+  src.delete();
+};
+
+video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true });
+
+loop();
+</script>
+
+</body>
+</html>
