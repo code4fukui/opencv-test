@@ -14,13 +14,17 @@ export const removeBackground = (src, iterCount = 1) => {
   // GrabCutアルゴリズムを適用
   cv.grabCut(src, mask, rect, bgdModel, fgdModel, iterCount, cv.GC_INIT_WITH_RECT);
 
+  cv.cvtColor(src, src, cv.COLOR_RGB2RGBA, 0); // A追加
+
   // マスクを更新して背景を除去
   for (let i = 0; i < mask.rows; i++) {
     for (let j = 0; j < mask.cols; j++) {
       if (mask.ucharPtr(i, j)[0] === 0 || mask.ucharPtr(i, j)[0] === 2) { // 背景または疑似背景
-        src.ucharPtr(i, j)[0] = 255; // 白または透明にする処理
-        src.ucharPtr(i, j)[1] = 255;
-        src.ucharPtr(i, j)[2] = 255;
+        const p = src.ucharPtr(i, j);
+        p[0] = 255; // 白で透明にする処理
+        p[1] = 255;
+        p[2] = 255;
+        p[3] = 0;
       }
     }
   }

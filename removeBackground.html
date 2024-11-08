@@ -9,7 +9,15 @@ video {
   display: none;
 }
 input[type="range"] {
-  width: calc(95vw - 5em);
+  width: calc(95vw - 9em);
+}
+.label {
+  display: inline-block;
+  width: 6em;
+  font-size: 80%;
+}
+a {
+  color: gray !important;
 }
 </style>
 </head>
@@ -18,8 +26,13 @@ input[type="range"] {
 <h1>OpenCV.js removeBackground by grabCut</h1>
 <video id="video" width="640" height="480" autoplay></video>
 <canvas id="canvas" width="640" height="480"></canvas>
-<input type="range" id="inp_iterCount" min=1 max=10 step=1 value=1><span id="span_iterCount"></span><br>
-<label><input type="checkbox" id="inp_flip" checked>flip</label><br>
+<span class="label">iterCount</span><input type="range" id="inp_iterCount" min=1 max=30 step=1 value=5><span id="span_iterCount"></span><br>
+<span class="label">contrast</span><input type="range" id="inp_contrast" min=1.0 max=3.0 step=0.01 value=1.0><span id="span_contrast"></span><br>
+<span class="label">brightness</span><input type="range" id="inp_brightness" min=-100 max=100 step=1 value=0><span id="span_brightness"></span><br>
+<label><input type="checkbox" id="chk_removeBackground" checked>remove background</label><br>
+<label><input type="checkbox" id="chk_flip">flip</label><br>
+<button id=btn_camera>start camera</button>
+<button id=btn_save>save</button>
 <hr>
 <a href=https://github.com/code4fukui/opencv-test/>src on GitHub</a>
 
@@ -27,25 +40,117 @@ input[type="range"] {
 import { cv } from "https://code4fukui.github.io/opencv-js/dist/opencv.esm.js";
 import { removeBackground } from "./removeBackground.js";
 import { showImageByFlipSetting } from "./showImageByFlipSetting.js";
+import { setDropFilesListener } from "https://js.sabae.cc/setDropFilesListener.js";
+import { waitFileRead } from "https://js.sabae.cc/waitFileRead.js";
+import { encodeData } from "https://code4fukui.github.io//dataencoder/encodeData.js";
+import { waitImageLoad } from "https://js.sabae.cc/waitImageLoad.js";
+import { sleep } from "https://js.sabae.cc/sleep.js";
+import { makeTransparentImage } from "./makeTransparentImage.js";
 
-const loop = () => {
-  requestAnimationFrame(loop);
-  
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+let flgcamera = false;
 
-  const iterCount = parseInt(inp_iterCount.value);
-  span_iterCount.textContent = iterCount;
+const ctx = canvas.getContext("2d");
+canvas.willReadFrequently = true;
+
+const draw = (canvas) => {
+  if (!cv.Mat) return;
+
+  const iterCount = parseInt(span_iterCount.textContent);
 
   const src = cv.imread(canvas);
-  removeBackground(src, iterCount);
+  //const alpha = 3.0; // alpha: コントラスト（通常は1.0〜3.0くらいの範囲で調整）
+  //const beta = 100; // beta: 輝度（-100〜100くらいの範囲で調整）
+  const alpha = parseFloat(span_contrast.textContent);
+  const beta = parseInt(span_brightness.textContent);
+  cv.cvtColor(src, src, cv.COLOR_RGBA2RGB, 0); // A除去
+  src.convertTo(src, -1, alpha, beta);
+  if (chk_removeBackground.checked) {
+    removeBackground(src, iterCount);
+  }
   showImageByFlipSetting(src);  
   src.delete();
 };
 
-video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true });
+const loop = () => {
+  if (!flgcamera) {
+    return;
+  }
+  canvas.height = canvas.width / video.videoWidth * video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  requestAnimationFrame(loop);
+  
+  draw(canvas);
+};
 
-loop();
+const stopVideo = (videoElem) => {
+  const stream = videoElem.srcObject;
+  const tracks = stream.getTracks();
+  tracks.forEach(track => track.stop());
+  videoElem.srcObject = null;
+};
+
+btn_camera.onclick = async () => {
+  if (flgcamera) {
+    flgcamera = false;
+    stopVideo(video);
+    btn_camera.textContent = "start camera";
+  } else {
+    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true });
+    flgcamera = true;
+    loop();
+    btn_camera.textContent = "stop camera";
+  }
+};
+
+let bkimg = null;
+
+const drawImage = async (img) => {
+  canvas.height = canvas.width / img.width * img.height;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  await sleep(10);
+  draw(canvas);
+  bkimg = img;
+};
+
+setDropFilesListener(document.body, async (files) => {
+  flgcamera = false;
+  const file = files[0];
+  const bin = await waitFileRead(file.file);
+  const img = new Image();
+  img.src = encodeData("image/jpeg", bin);
+  await waitImageLoad(img);
+  await drawImage(img);
+});
+
+const update = async () => {
+  span_iterCount.textContent = parseInt(inp_iterCount.value)
+  span_contrast.textContent = parseFloat(inp_contrast.value);
+  span_brightness.textContent = parseInt(inp_brightness.value);
+  if (bkimg) await drawImage(bkimg);
+};
+const updateList = [
+  inp_iterCount,
+  inp_brightness,
+  inp_contrast,
+  chk_flip,
+  chk_removeBackground,
+];
+updateList.forEach(i => i.oninput = update);
+updateList[0].oninput();
+
+ctx.font = "20px sans-serif";
+ctx.fillText("drop jpeg file or press start camera button", 10, canvas.height / 2);
+
+const url = makeTransparentImage();
+canvas.style.backgroundImage = `url(${url})`;
+
+btn_save.onclick = () => {
+  const url = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.download = "image.png";
+  a.href = url;
+  a.click();
+};
 </script>
 
 </body>
