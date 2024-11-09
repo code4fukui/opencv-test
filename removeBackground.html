@@ -38,7 +38,7 @@ a {
 
 <script type="module">
 import { cv } from "https://code4fukui.github.io/opencv-js/dist/opencv.esm.js";
-import { removeBackground } from "./removeBackground.js";
+import { removeBackground, convertImage } from "./removeBackground.js";
 import { showImageByFlipSetting } from "./showImageByFlipSetting.js";
 import { setDropFilesListener } from "https://js.sabae.cc/setDropFilesListener.js";
 import { waitFileRead } from "https://js.sabae.cc/waitFileRead.js";
@@ -62,10 +62,10 @@ const draw = (canvas) => {
   //const beta = 100; // beta: 輝度（-100〜100くらいの範囲で調整）
   const alpha = parseFloat(span_contrast.textContent);
   const beta = parseInt(span_brightness.textContent);
-  cv.cvtColor(src, src, cv.COLOR_RGBA2RGB, 0); // A除去
-  src.convertTo(src, -1, alpha, beta);
   if (chk_removeBackground.checked) {
-    removeBackground(src, iterCount);
+    removeBackground(src, iterCount, alpha, beta);
+  } else {
+    convertImage(src, alpha, beta);
   }
   showImageByFlipSetting(src);  
   src.delete();

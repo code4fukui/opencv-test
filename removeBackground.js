@@ -1,7 +1,15 @@
 // https://docs.opencv.org/4.x/dd/dfc/tutorial_js_grabcut.html
 
-export const removeBackground = (src, iterCount = 1) => {
+export const convertImage = (src, alpha, beta) => {
   cv.cvtColor(src, src, cv.COLOR_RGBA2RGB, 0); // A除去
+  src.convertTo(src, -1, alpha, beta);
+};
+
+export const removeBackground = (src, iterCount = 1, alpha = 1.0, beta = 0) => {
+  cv.cvtColor(src, src, cv.COLOR_RGBA2RGB, 0); // A除去
+  if (alpha != 1.0 || beta != 0) {
+    src.convertTo(src, -1, alpha, beta);
+  }
   
   const mask = new cv.Mat(); // マスク用のMatを作成
   const bgdModel = new cv.Mat(); // 背景モデルを作成
